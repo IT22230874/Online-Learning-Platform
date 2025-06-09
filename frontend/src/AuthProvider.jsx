@@ -19,11 +19,15 @@ export const AuthProvider = ({ children }) => {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
-        if (res.data && res.data.role) {
+        if (
+          res.data &&
+          (res.data.role === null ||
+            res.data.role === undefined ||
+            res.data.role)
+        ) {
           setUser({ token, ...res.data });
         } else {
           setUser(null);
-          localStorage.removeItem("token");
         }
         setLoading(false);
       })

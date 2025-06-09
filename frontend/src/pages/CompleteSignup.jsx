@@ -1,12 +1,18 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../AuthProvider";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 function CompleteSignup({ token, onComplete }) {
   const [role, setRole] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [bio, setBio] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -15,11 +21,24 @@ function CompleteSignup({ token, onComplete }) {
     try {
       const res = await axios.post(
         `${API_URL}/api/auth/set-role`,
-        { role },
+        { role, firstName, lastName, bio },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (res.status === 200) {
-        onComplete && onComplete(role);
+        const userRes = await axios.get(`${API_URL}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (userRes.data && userRes.data.role) {
+          if (userRes.data.role === "instructor") {
+            navigate("/instructor/dashboard", { replace: true });
+          } else if (userRes.data.role === "student") {
+            navigate("/student/dashboard", { replace: true });
+          } else {
+            navigate("/", { replace: true });
+          }
+        } else {
+          window.location.reload();
+        }
       } else {
         setMessage(res.data.error || "Failed to set role");
       }
@@ -45,6 +64,27 @@ function CompleteSignup({ token, onComplete }) {
           <option value="student">Student</option>
           <option value="instructor">Instructor</option>
         </select>
+        <input
+          name="firstName"
+          placeholder="First Name"
+          value={firstName}
+          onChange={(e) => setFirstName(e.target.value)}
+          className="px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+        <input
+          name="lastName"
+          placeholder="Last Name"
+          value={lastName}
+          onChange={(e) => setLastName(e.target.value)}
+          className="px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+        <textarea
+          name="bio"
+          placeholder="Short Bio"
+          value={bio}
+          onChange={(e) => setBio(e.target.value)}
+          className="px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
         <button
           type="submit"
           className="bg-blue-600 text-white py-2 rounded hover:bg-blue-700 font-semibold"

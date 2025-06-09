@@ -5,7 +5,25 @@ const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  role: { type: String, enum: ['student', 'instructor'], default: null }, // No default role
+  role: { type: String, enum: ['student', 'instructor', 'admin'], default: null },
+  firstName: { type: String },
+  lastName: { type: String },
+  profilePicture: { type: String },
+  bio: { type: String },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+  // For OAuth
+  googleId: { type: String },
+  // For students
+  enrolledCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
+  // For instructors
+  taughtCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
+  // For notifications/messages
+  notifications: [{
+    message: String,
+    read: { type: Boolean, default: false },
+    createdAt: { type: Date, default: Date.now }
+  }],
 });
 
 userSchema.pre('save', async function (next) {

@@ -1,42 +1,42 @@
-import React, { useState } from "react";
-import axios from "axios";
+import React, { useState, useEffect } from "react";
 
-const RegisterForm = ({ onRegister }) => {
+const RegisterForm = ({ onSubmit, role = "student", message }) => {
   const [form, setForm] = useState({
     username: "",
     password: "",
     email: "",
-    role: "student",
+    firstName: "",
+    lastName: "",
+    bio: "",
   });
-  const [message, setMessage] = useState("");
-  const API_URL = import.meta.env.VITE_API_URL;
+
+  useEffect(() => {
+    setForm({
+      username: "",
+      password: "",
+      email: "",
+      firstName: "",
+      lastName: "",
+      bio: "",
+    });
+  }, [role]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setMessage("");
-    try {
-      const res = await axios.post(`${API_URL}/api/auth/register`, form);
-      if (res.status === 201) {
-        setMessage("Registration successful!");
-        onRegister && onRegister();
-      } else {
-        setMessage(res.data.error || "Registration failed");
-      }
-    } catch (err) {
-      setMessage(err.response?.data?.error || "Registration failed");
-    }
+    onSubmit({ ...form, role });
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="max-w-md mx-auto mt-8 p-8 bg-white rounded-lg shadow-md flex flex-col gap-4"
-    >
-      <h2 className="text-2xl font-bold mb-4 text-center">Register</h2>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <h2 className="text-2xl font-bold mb-4 text-center">
+        {role === "student"
+          ? "Student Registration"
+          : "Instructor Registration"}
+      </h2>
       <input
         name="username"
         placeholder="Username"
@@ -62,15 +62,27 @@ const RegisterForm = ({ onRegister }) => {
         required
         className="px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
       />
-      <select
-        name="role"
-        value={form.role}
+      <input
+        name="firstName"
+        placeholder="First Name"
+        value={form.firstName}
         onChange={handleChange}
         className="px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-      >
-        <option value="student">Student</option>
-        <option value="instructor">Instructor</option>
-      </select>
+      />
+      <input
+        name="lastName"
+        placeholder="Last Name"
+        value={form.lastName}
+        onChange={handleChange}
+        className="px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+      />
+      <textarea
+        name="bio"
+        placeholder="Short Bio"
+        value={form.bio}
+        onChange={handleChange}
+        className="px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+      />
       <button
         type="submit"
         className="bg-green-600 text-white py-2 rounded hover:bg-green-700 transition-colors font-semibold"

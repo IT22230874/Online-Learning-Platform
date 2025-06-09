@@ -5,6 +5,7 @@ const authMiddleware = require('../middleware/auth');
 const User = require('../models/User');
 const passport = require('passport');
 const jwt = require('../utils/jwt');
+const { upload, uploadToCloudinary } = require('../utils/cloudinary');
 
 router.post('/register', register);
 router.post('/login', login);
@@ -43,6 +44,17 @@ router.post('/set-role', authMiddleware, async (req, res) => {
     res.json({ message: 'Role updated', role: user.role });
   } catch {
     res.status(500).json({ error: 'Failed to update role' });
+  }
+});
+
+// Upload profile or course image
+router.post('/upload-image', authMiddleware, upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    const url = await uploadToCloudinary(req.file.buffer, req.body.folder || 'profile_pics');
+    res.json({ url });
+  } catch (err) {
+    res.status(500).json({ error: 'Image upload failed' });
   }
 });
 

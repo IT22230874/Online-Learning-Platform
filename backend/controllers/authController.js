@@ -3,7 +3,7 @@ const jwt = require('../utils/jwt');
 
 exports.register = async (req, res) => {
   try {
-    const { username, email, password, role } = req.body;
+    const { username, email, password, role, firstName, lastName, profilePicture, bio } = req.body;
     if (!username || !email || !password) {
       return res.status(400).json({ error: 'All fields are required' });
     }
@@ -11,7 +11,16 @@ exports.register = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({ error: 'User already exists' });
     }
-    const user = new User({ username, email, password, role: role || 'student' });
+    const user = new User({
+      username,
+      email,
+      password,
+      role: role || 'student',
+      firstName,
+      lastName,
+      profilePicture,
+      bio
+    });
     await user.save();
     res.status(201).json({ message: 'User registered successfully' });
   } catch (error) {

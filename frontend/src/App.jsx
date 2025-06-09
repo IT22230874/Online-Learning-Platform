@@ -1,28 +1,57 @@
 import React from "react";
-import RegisterForm from "./RegisterForm";
-import LoginForm from "./LoginForm";
 import { AuthProvider, useAuth } from "./AuthProvider";
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
+  useNavigate,
 } from "react-router-dom";
-import InstructorDashboard from "./InstructorDashboard";
-import StudentDashboard from "./StudentDashboard";
-import CompleteSignup from "./CompleteSignup";
+import InstructorDashboard from "./pages/InstructorDashboard";
+import StudentDashboard from "./pages/StudentDashboard";
+import CompleteSignup from "./pages/CompleteSignup";
+import LoginScreen from "./pages/LoginScreen";
+import RegisterScreen from "./pages/RegisterScreen";
+import CourseDetail from "./pages/CourseDetail";
+import StudentCourseDetails from "./pages/StudentCourseDetails";
+import MainLayout from "./layouts/MainLayout";
+import { Toaster } from "react-hot-toast";
+
+function OAuthSuccess() {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+    if (token) {
+      localStorage.setItem("token", token);
+      login(token);
+      // Remove token from URL
+      window.history.replaceState({}, document.title, "/");
+      // Wait for login to complete, then reload to trigger AuthProvider
+      setTimeout(() => {
+        window.location.replace("/");
+      }, 200);
+    } else {
+      // If no token, redirect to login
+      navigate("/");
+    }
+  }, [login, navigate]);
+  return (
+    <div className="flex justify-center items-center min-h-screen">
+      Logging in with Google...
+    </div>
+  );
+}
 
 function AppContent() {
   const { user, login, logout, loading } = useAuth();
-  const [showRegister, setShowRegister] = React.useState(false);
-  const [pendingToken, setPendingToken] = React.useState(null);
 
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
     if (token) {
       localStorage.setItem("token", token);
-      setPendingToken(token);
       login(token);
       window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -37,66 +66,60 @@ function AppContent() {
   }
 
   if (user && (user.role === null || user.role === undefined)) {
-    return (
-      <CompleteSignup
-        token={user.token || pendingToken}
-        onComplete={(role) => window.location.reload()}
-      />
-    );
+    return <Navigate to="/complete-signup" replace />;
   }
 
-  return (
-    <div className="min-h-screen bg-gray-100 flex flex-col justify-center">
-      {!user ? (
-        <div className="max-w-md mx-auto mt-10 p-8 bg-white rounded-lg shadow-md">
-          <div className="flex justify-center mb-6 gap-4">
-            <button
-              className={`px-4 py-2 rounded font-semibold ${
-                !showRegister ? "bg-blue-600 text-white" : "bg-gray-200"
-              }`}
-              onClick={() => setShowRegister(false)}
-            >
-              Login
-            </button>
-            <button
-              className={`px-4 py-2 rounded font-semibold ${
-                showRegister ? "bg-green-600 text-white" : "bg-gray-200"
-              }`}
-              onClick={() => setShowRegister(true)}
-            >
-              Register
-            </button>
-          </div>
-          {showRegister ? (
-            <RegisterForm onRegister={() => setShowRegister(false)} />
-          ) : (
-            <LoginForm onLogin={login} />
-          )}
-        </div>
-      ) : user.role === "instructor" ? (
-        <Navigate to="/instructor/dashboard" />
-      ) : (
-        <Navigate to="/student/dashboard" />
-      )}
-    </div>
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return user.role === "instructor" ? (
+    <Navigate to="/instructor/dashboard" />
+  ) : (
+    <Navigate to="/student/dashboard" />
   );
 }
 
 function App() {
   return (
     <AuthProvider>
+      <Toaster position="top-right" />
       <Router>
         <Routes>
-          <Route path="/" element={<AppContent />} />
-          <Route
-            path="/instructor/dashboard"
-            element={<InstructorDashboard />}
-          />
-          <Route path="/student/dashboard" element={<StudentDashboard />} />
-          <Route path="*" element={<Navigate to="/" />} />
+          <Route element={<MainLayout />}>
+            <Route path="/" element={<AppContent />} />
+            <Route path="/login" element={<LoginScreen />} />
+            <Route path="/register" element={<RegisterScreen />} />
+            <Route path="/oauth-success" element={<OAuthSuccess />} />
+            <Route
+              path="/complete-signup"
+              element={<CompleteSignupWrapper />}
+            />
+
+            <Route
+              path="/instructor/dashboard"
+              element={<InstructorDashboard />}
+            />
+            <Route path="/student/dashboard" element={<StudentDashboard />} />
+            <Route path="*" element={<Navigate to="/" />} />
+            <Route path="/courses/:id" element={<CourseDetail />} />
+            <Route
+              path="/student/courses/:id"
+              element={<StudentCourseDetails />}
+            />
+          </Route>
         </Routes>
       </Router>
     </AuthProvider>
+  );
+}
+
+// Wrapper to provide token to CompleteSignup
+function CompleteSignupWrapper() {
+  const { user } = useAuth();
+  const token = user?.token || localStorage.getItem("token");
+  return (
+    <CompleteSignup token={token} onComplete={() => window.location.reload()} />
   );
 }
 
